@@ -1,26 +1,34 @@
-# Use the official .NET 9 SDK image for building
+# Stage 1: Build
 FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
-
 WORKDIR /src
 
-COPY *.sln ./
-COPY ArcCorpBackend.Domain/*.csproj ./ArcCorpBackend.Domain/
-COPY ArcCorpBackend.Services/*.csproj ./ArcCorpBackend.Services/
-COPY ArcCorpBackend.Controllers/*.csproj ./ArcCorpBackend.Controllers/
-COPY ArcCorpBackend/*.csproj ./ArcCorpBackend/
+# Copy solution file first
+COPY ArcCorpBackend.sln ./
 
+# Copy csproj files for projects included in the solution
+COPY ArcCorpBackend/ArcCorpBackend.csproj ArcCorpBackend/
+COPY ArcCorpBackend.Domain/*.csproj ArcCorpBackend.Domain/
+COPY ArcCorpBackend.core/*.csproj ArcCorpBackend.core/
+
+# Restore dependencies
 RUN dotnet restore
 
-COPY . ./
+# Copy entire project folders
+COPY ArcCorpBackend/ ArcCorpBackend/
+COPY ArcCorpBackend.Domain/ ArcCorpBackend.Domain/
+COPY ArcCorpBackend.core/ ArcCorpBackend.core/
 
-RUN dotnet publish ArcCorpBackend/ArcCorpBackend.csproj -c Release -o /app/publish
+# Build in release mode
+WORKDIR /src/ArcCorpBackend
+RUN dotnet build -c Release -o /app/build
 
-FROM mcr.microsoft.com/dotnet/aspnet:9.0
+# Stage 2: Publish
+FROM build AS publish
+RUN dotnet publish -c Release -o /app/publish
 
+# Stage 3: Run
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS final
 WORKDIR /app
-COPY --from=build /app/publish .
-
-ENV ASPNETCORE_URLS=http://+:8080
-EXPOSE 8080
+COPY --from=publish /app/publish .
 
 ENTRYPOINT ["dotnet", "ArcCorpBackend.dll"]
