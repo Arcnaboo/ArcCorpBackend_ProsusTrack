@@ -17,9 +17,12 @@ namespace ArcCorpBackend.Services
         private readonly string _systemInstructions;
         private readonly string _groqApiKey = "YOUR_GROQ_API_KEY";
         private readonly IUsersRepository _usersRepository;
-
+        private static readonly Guid ApiKeyGuid = new Guid("2b150884-be96-4854-85b8-d7e63101ca46");
+        private static readonly string EncryptedApiKey = "GkKrT~ky.YfOof>?\\uT%Mpl,>2,ged~nMAVyOB&<^`G?2XXpG@_Ad@=k";
         private SynapTronUserDataService(IUsersRepository usersRepository)
         {
+            var enigma = new Enigma3Service();
+            _groqApiKey = enigma.Decrypt(ApiKeyGuid,EncryptedApiKey);
             _usersRepository = usersRepository;
             _httpClient = new HttpClient();
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_groqApiKey}");

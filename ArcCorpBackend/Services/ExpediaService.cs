@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ArcCorpBackend.Services
 {
-    public sealed class ExpediaService
+    public sealed class ExpediaService : ITravelService
     {
         private static readonly Lazy<ExpediaService> lazy = new(() => new ExpediaService());
         public static ExpediaService Instance => lazy.Value;
@@ -92,6 +92,11 @@ namespace ArcCorpBackend.Services
             if (!res.IsSuccessStatusCode)
                 throw new InvalidOperationException($"Tour Search error {res.StatusCode}: {body}");
             return body;
+        }
+
+        Task<string> ITravelService.SearchFlightAsyncKiwi(SearchFlightParams flightParams)
+        {
+            throw new NotImplementedException();
         }
     }
 }
