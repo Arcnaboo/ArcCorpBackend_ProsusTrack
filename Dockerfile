@@ -9,6 +9,7 @@ COPY ArcCorpBackend.sln ./
 COPY ArcCorpBackend/ArcCorpBackend.csproj ArcCorpBackend/
 COPY ArcCorpBackend.Domain/*.csproj ArcCorpBackend.Domain/
 COPY ArcCorpBackend.core/*.csproj ArcCorpBackend.core/
+COPY TestConsole/*.csproj TestConsole/
 
 # Restore dependencies
 RUN dotnet restore
@@ -17,6 +18,7 @@ RUN dotnet restore
 COPY ArcCorpBackend/ ArcCorpBackend/
 COPY ArcCorpBackend.Domain/ ArcCorpBackend.Domain/
 COPY ArcCorpBackend.core/ ArcCorpBackend.core/
+COPY TestConsole/ TestConsole/
 
 # Build in release mode
 WORKDIR /src/ArcCorpBackend
