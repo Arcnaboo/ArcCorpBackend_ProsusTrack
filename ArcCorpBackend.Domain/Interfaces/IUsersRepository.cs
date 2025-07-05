@@ -9,6 +9,7 @@ namespace ArcCorpBackend.Domain.Interfaces
     {
         // User methods
         Task<List<User>> GetUsersAsync();
+        Task<bool> UsersExists(string emsil);
         Task<User?> GetUserByEmailAsync(string email);
         Task<User?> GetUserByIdAsync(Guid userId);
         Task AddUserAsync(User user);

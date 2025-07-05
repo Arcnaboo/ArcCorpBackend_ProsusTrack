@@ -83,5 +83,12 @@ namespace ArcCorpBackend.Domain.Repositories
         {
             await _userContext.SaveChangesAsync();
         }
+
+        async Task<bool> IUsersRepository.UsersExists(string emsil)
+        {
+            return await Task.Run(() => _userContext.Users.Where(x => x.Email == emsil).Any());
+           // return _userContext.Users.Where(x => x.Email == emsil).Any();
+            
+        }
     }
 }

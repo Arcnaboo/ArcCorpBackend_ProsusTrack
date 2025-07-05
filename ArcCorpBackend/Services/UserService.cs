@@ -10,7 +10,7 @@ namespace ArcCorpBackend.Services
     public class UserService
     {
         private static readonly ConcurrentDictionary<string, string> VerificationCodes = new();
-
+        private static readonly IUsersRepository UsersRepository = new UsersRepository();
         private UserService() { }
 
         /// <summary>
@@ -54,6 +54,28 @@ namespace ArcCorpBackend.Services
             await usersRepository.AddUserAsync(user);
         
         }
+
+        public static string GetExistingCode(string email)
+        {
+            if (VerificationCodes.TryGetValue(email, out var existingCode))
+            {
+                return existingCode;
+            }
+            return null;
+        }
+        public static bool   IsExistingUser(string email, out string code)
+        { 
+            if  (UsersRepository.UsersExists(email).Result)
+            {
+                code = NewUser(email);
+                return true;
+            }
+
+            code = email;
+            return false;
+        }
+
+
 
     }
 }

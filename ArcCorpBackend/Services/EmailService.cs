@@ -6,12 +6,16 @@ namespace ArcCorpBackend.Services
 {
     public class EmailService
     {
-        private const string FromEmail = "fintagsoft@gmail.com";
-        private const string FromName = "ArcCorp";
-        private const string FromPassword = "Arc2020.!";
+        private static readonly string FromEmail = "arccorpinfo@gmail.com";    // UPDATED EMAIL
+        private static readonly string FromName = "ArcCorp";
+        private static string FromPassword = "";      // UPDATED APP PASSWORD (spaces removed)
+
+        
+
 
         public static void SendEmail(string toEmail, string subject, string body, bool isHtml)
         {
+            FromPassword = ConstantSecretKeyService.Instance.GetGmailPassword();
             var fromAddress = new MailAddress(FromEmail, FromName);
             var toAddress = new MailAddress(toEmail);
 
@@ -37,7 +41,9 @@ namespace ArcCorpBackend.Services
         }
 
         public async static Task SendEmailAsync(string toEmail, string subject, string body, bool isHtml)
+
         {
+            FromPassword = ConstantSecretKeyService.Instance.GetGmailPassword();
             var fromAddress = new MailAddress(FromEmail, FromName);
             var toAddress = new MailAddress(toEmail);
 
