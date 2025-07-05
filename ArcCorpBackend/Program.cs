@@ -1,3 +1,7 @@
+using ArcCorpBackend.Services;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.Text;
 
 namespace ArcCorpBackend
 {
@@ -5,13 +9,36 @@ namespace ArcCorpBackend
     {
         public static void Main(string[] args)
         {
+            // Retrieve your decrypted JWT key from your ConstantSecretKeyService
+            var JWT = ConstantSecretKeyService.Instance.GetJWT();
+
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-
+            // Add controllers to the DI container.
             builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
+            // Add OpenAPI support.
             builder.Services.AddOpenApi();
+
+            // Configure JWT authentication using your JWT key.
+            builder.Services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuerSigningKey = true,
+                    IssuerSigningKey = new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(JWT)),
+                    ValidateIssuer = false,
+                    ValidateAudience = false,
+                    ValidateLifetime = true,
+                    ClockSkew = TimeSpan.FromMinutes(2)
+                };
+            });
 
             var app = builder.Build();
 
@@ -23,8 +50,9 @@ namespace ArcCorpBackend
 
             app.UseHttpsRedirection();
 
+            // Enable authentication and authorization middleware
+            app.UseAuthentication();
             app.UseAuthorization();
-
 
             app.MapControllers();
 

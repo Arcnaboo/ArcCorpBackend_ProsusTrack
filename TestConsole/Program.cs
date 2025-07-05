@@ -1,7 +1,10 @@
 ﻿using ArcCorpBackend.Services;
 using System;
 using System.Globalization;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
+using System;
+using System.Security.Cryptography;
 
 namespace TestConsole
 {
@@ -9,6 +12,13 @@ namespace TestConsole
     {
         static async Task Main(string[] args)
         {
+            
+
+            var key = new byte[64]; // 512 bits
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(key);
+            Console.WriteLine(Convert.ToHexString(key).ToLower());
+
             var enigma = new Enigma3Service();
             var id = new Guid("2b150884-be96-4854-85b8-d7e63101ca46");
             Console.WriteLine($"Random GUID for this session: {id}");
