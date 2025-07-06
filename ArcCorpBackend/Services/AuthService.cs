@@ -17,19 +17,21 @@ namespace ArcCorpBackend.Services
         private static readonly string Audience = "ArcCorpClients";
         private static readonly int ExpiresMinutes = 60 * 24 * 7; // 7 days
 
-
         /// <summary>
-        /// Generates a signed JWT token for the given user ID.
+        /// Generates a signed JWT token for the given user GUID ID (as string).
         /// </summary>
-        public static string GenerateToken(string userId)
+        public static string GenerateToken(string userGuidId)
         {
+            if (!Guid.TryParse(userGuidId, out _))
+                throw new ArgumentException("Invalid user GUID for token generation.", nameof(userGuidId));
+
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(JwtKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             var claims = new[]
             {
-                new Claim(JwtRegisteredClaimNames.Sub, userId),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new Claim(JwtRegisteredClaimNames.Sub, userGuidId),                 // User GUID in sub
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())   // Random token GUID in jti
             };
 
             var token = new JwtSecurityToken(
@@ -44,16 +46,18 @@ namespace ArcCorpBackend.Services
         }
 
         /// <summary>
-        /// Validates the given JWT token. Returns true if valid; sets userId to the token's subject.
+        /// Validates the given JWT token. Returns true if valid; sets userId to sub and tokenId to jti.
         /// </summary>
         public static bool ValidateToken(string token, out string userId)
         {
             userId = null;
+            
             var handler = new JwtSecurityTokenHandler();
             var key = Encoding.UTF8.GetBytes(JwtKey);
 
             var parameters = new TokenValidationParameters
             {
+                RequireExpirationTime = true,
                 ValidateIssuer = true,
                 ValidIssuer = Issuer,
                 ValidateAudience = true,
@@ -67,8 +71,18 @@ namespace ArcCorpBackend.Services
             try
             {
                 var principal = handler.ValidateToken(token, parameters, out _);
-                userId = principal.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
-                return true;
+                var identity = principal?.Identity as ClaimsIdentity;
+
+                if (identity == null || !identity.IsAuthenticated)
+                    return false;
+
+                var subClaim = identity.FindFirst(ClaimTypes.NameIdentifier); // sub → user GUID
+                userId = subClaim?.Value;
+
+                var jtiClaim = identity.FindFirst(JwtRegisteredClaimNames.Jti);
+                //tokenId = jtiClaim?.Value;
+
+                return !string.IsNullOrEmpty(userId); //&& !string.IsNullOrEmpty(tokenId);
             }
             catch
             {
