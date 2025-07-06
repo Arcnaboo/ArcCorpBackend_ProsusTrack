@@ -1,13 +1,13 @@
-﻿using System;
+﻿using ArcCorpBackend.Core.Users;
+using ArcCorpBackend.Domain.Interfaces;
+using ArcCorpBackend.Domain.Repositories;
+using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
-using ArcCorpBackend.Core.Users;
-using ArcCorpBackend.Core.Messages;
-using ArcCorpBackend.Domain.Interfaces;
-using ArcCorpBackend.Domain.Repositories;
 
 namespace ArcCorpBackend.Services
 {
@@ -16,20 +16,20 @@ namespace ArcCorpBackend.Services
         private static readonly Guid ApiKeyGuid = new Guid("2b150884-be96-4854-85b8-d7e63101ca46");
         private static readonly string EncryptedApiKey = "GkKrT~ky.YfOof>?\\uT%Mpl,>2,ged~nMAVyOB&<^`G?2XXpG@_Ad@=k";
 
+        
+
         private readonly HttpClient _httpClient;
         private readonly string _groqApiKey;
         private readonly List<Dictionary<string, string>> _globalHistory;
         private readonly string _systemFacts;
-        private readonly IUsersRepository _usersRepository = new UsersRepository();
-        private readonly User _user;
-        public SynapTronChatService(User user, string chatId)
+        private readonly User User;
+        private readonly string ChatId;
+        public SynapTronChatService(User _user, string chatId)
         {
-            if (!Guid.TryParse(chatId, out Guid parsedChatId))
-                throw new ArgumentException("Invalid chatId format");
-            _user = user;
+            User = _user;
+            ChatId = chatId;
             var enigma = new Enigma3Service();
             _groqApiKey = enigma.Decrypt(ApiKeyGuid, EncryptedApiKey);
-
             _httpClient = new HttpClient();
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_groqApiKey}");
 
@@ -56,50 +56,50 @@ namespace ArcCorpBackend.Services
                 "  \"toId\": \"IATA code of the arrival airport, e.g., ESB\",\n" +
                 "  \"departureDate\": \"yyyy-MM-dd\"\n" +
                 "}\n";
-            // here we should consider adding user history
-            List<UserData> datas = _usersRepository.GetUserDataForUser(user.UserId);
 
-            //here add userdata to globalhistory possibly as additional sys fact
-            //List<UserData> datas = _usersRepository.GetUserDataForUser(user.UserId);
+            IUsersRepository repo = new UsersRepository();
 
-            foreach (var data in datas)
+            var data = repo.GetUserDataForUser(User.UserId);
+            foreach (var item in data)
             {
+                //ADD item.Message as System message to _global history
                 _globalHistory.Add(new Dictionary<string, string>
                 {
                     ["role"] = "system",
-                    ["content"] = $"User preference: {data.Message}"
+                    ["content"] = item.Message
                 });
             }
 
-            _globalHistory.Add(new Dictionary<string, string>
+            _globalHistory.Add(new()
             {
                 ["role"] = "system",
                 ["content"] = _systemFacts
             });
 
-            Chat targetChat = null;
-            foreach (var chat in user.Chats)
+            var storedChat = User.Chats.Where(ch => ch.ChatId.ToString() == ChatId.ToString()).First();
+
+            foreach (var message in storedChat.Messages)
             {
-                if (chat.ChatId == parsedChatId)
+                if (message.IsUserMessage)
                 {
-                    targetChat = chat;
-                    break;
+                    //ADD message.Content to _globalhistory as user message
+                    _globalHistory.Add(new Dictionary<string, string>
+                    {
+                        ["role"] = "user",
+                        ["content"] = message.Content
+                    });
+                }
+                else
+                {
+                    //ADD message.Content as assistant message to _globalhistory
+                    _globalHistory.Add(new Dictionary<string, string>
+                    {
+                        ["role"] = "assistant",
+                        ["content"] = message.Content
+                    });
                 }
             }
-
-            if (targetChat == null)
-                throw new KeyNotFoundException($"Chat with ID {chatId} not found for user {user.Email}.");
-
-            foreach (var message in targetChat.Messages)
-            {
-                _globalHistory.Add(new Dictionary<string, string>
-                {
-                    ["role"] = message.IsUserMessage ? "user" : "assistant",
-                    ["content"] = message.Content
-                });
-            }
         }
-
         public async Task<SynapTronResponse> CategorizeIntent(string userMessage)
         {
             var prompt = $"{{userMessage: \"{userMessage}\"}}";
@@ -124,6 +124,47 @@ namespace ArcCorpBackend.Services
                     MissingContext = new() { "Groq failed to respond properly" },
                     UserPrompt = "Sorry, I couldn’t understand. Please try rephrasing."
                 };
+
+                if (arc.ReadyForAction && arc.Category.Equals("Flight Booking", StringComparison.OrdinalIgnoreCase))
+                {
+                    var flightParams = new SearchFlightParams
+                    {
+                        Source = arc.Source ?? "City:LON",
+                        Destination = arc.Destination ?? "City:DXB",
+                        OutboundDepartmentDateStart = arc.DepartureDate ?? "2025-08-10T00:00:00",
+                        OutboundDepartmentDateEnd = arc.DepartureDate ?? "2025-08-10T00:00:00",
+                    };
+
+                    var rawFlightJson = await BookingComAPIService.Instance.SearchFlightAsyncKiwi(flightParams);
+
+                    var handler = new BookingComResultHandlerService();
+                    var cards = handler.Handle(rawFlightJson);
+
+                    if (cards.Count == 0)
+                    {
+                        return new SynapTronResponse
+                        {
+                            Success = true,
+                            Category = arc.Category,
+                            HasCards = false,
+                            Cards = new List<Card>(),
+                            Message = "No flights found.",
+                            MissingContext = arc.MissingContext,
+                            ReadyForAction = true
+                        };
+                    }
+
+                    return new SynapTronResponse
+                    {
+                        Success = true,
+                        Category = arc.Category,
+                        HasCards = true,
+                        Cards = cards,
+                        Message = $"{cards.Count} flights found.",
+                        MissingContext = arc.MissingContext,
+                        ReadyForAction = true
+                    };
+                }
 
                 return new SynapTronResponse
                 {
@@ -176,4 +217,8 @@ namespace ArcCorpBackend.Services
             return completion.Trim();
         }
     }
+
+ 
+
+   
 }
