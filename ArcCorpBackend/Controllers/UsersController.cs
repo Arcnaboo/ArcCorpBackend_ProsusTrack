@@ -102,7 +102,9 @@ namespace ArcCorpBackend.Controllers
             {
                 if (await UserService.ValidateCode(email, code))
                 {
-                    var jwt = AuthService.GenerateToken(email);
+                    var repo = new UsersRepository();
+                    var user = await repo.GetUserByEmailAsync(email);
+                    var jwt = AuthService.GenerateToken(user.UserId.ToString());
 
                     result.Success = true;
                     result.Message = "Login successful. Welcome!";
