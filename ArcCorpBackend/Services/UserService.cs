@@ -49,6 +49,7 @@ namespace ArcCorpBackend.Services
         {
             var user = new User(email);
             await UsersRepository.AddUserAsync(user);
+            await UsersRepository.SaveChangesAsync();
         }
 
         public static async Task<string> FixUsers()
