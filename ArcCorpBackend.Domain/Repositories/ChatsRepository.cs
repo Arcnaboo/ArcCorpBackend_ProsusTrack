@@ -1,4 +1,5 @@
 ﻿using ArcCorpBackend.Core.Messages;
+using ArcCorpBackend.Core.Users;
 using ArcCorpBackend.Domain.ArcContextSimulation;
 using ArcCorpBackend.Domain.Interfaces;
 using System;
@@ -8,54 +9,46 @@ using System.Threading.Tasks;
 
 namespace ArcCorpBackend.Domain.Repositories
 {
-    internal class ChatsRepository : IChatsRepository
+    public class ChatsRepository : IChatsRepository
     {
-        private readonly ArcChatContext _chatContext = new();
+        private readonly ArcUserContext arcUserContext = new();
+        private readonly IUsersRepository usersRepository = new UsersRepository();
 
-        public ChatsRepository() { }
-
-        public async Task AddChatAsync(Chat chat)
+        public async Task<List<Chat>> GetChatsForUserAsync(Guid userId)
         {
-            await Task.Run(() => _chatContext.AddChat(chat));
+            var user =  await usersRepository.GetUserByIdAsync(userId);
+            if (user == null)
+                throw new KeyNotFoundException($"User with ID {userId} not found.");
+
+            return user.Chats;
         }
 
-        public async Task AddMessageAsync(Message message)
+        public async Task AddChatToUserAsync(Guid userId, Chat chat)
         {
-            await Task.Run(() => _chatContext.AddMessage(message));
+            User? user = await usersRepository.GetUserByIdAsync(userId); // changed here
+            if (user == null)
+                throw new KeyNotFoundException($"User with ID {userId} not found.");
+
+            user.Chats.Add(chat);
+            
         }
 
-        public async Task DeleteChatAsync(Guid chatId)
+        public async Task DeleteChatFromUserAsync(Guid userId, Guid chatId)
         {
-            await Task.Run(() => _chatContext.RemoveChat(chatId));
-        }
+            User? user = await usersRepository.GetUserByIdAsync(userId); // changed here
+            if (user == null)
+                throw new KeyNotFoundException($"User with ID {userId} not found.");
 
-        public async Task DeleteMessageAsync(Guid messageId)
-        {
-            await Task.Run(() => _chatContext.RemoveMessage(messageId));
-        }
+            Chat? chatToRemove = user.Chats.FirstOrDefault(c => c.ChatId == chatId);
+            if (chatToRemove == null)
+                throw new KeyNotFoundException($"Chat with ID {chatId} not found for user {userId}.");
 
-        public async Task<Chat?> GetChatByIdAsync(Guid chatId)
-        {
-            return await Task.Run(() =>
-                _chatContext.Chats.FirstOrDefault(c => c.ChatId == chatId)
-            );
+            user.Chats.Remove(chatToRemove);
+            
         }
-
-        public async Task<List<Chat>> GetChatsAsync()
-        {
-            return await Task.Run(() => _chatContext.Chats.ToList());
-        }
-
-        public async Task<List<Message>> GetMessagesForChatAsync(Guid chatId)
-        {
-            return await Task.Run(() =>
-                _chatContext.Messages.Where(m => m.Chat.ChatId == chatId).ToList()
-            );
-        }
-
         public async Task SaveChangesAsync()
         {
-            await _chatContext.SaveChangesAsync();
+            await arcUserContext.SaveChangesAsync();
         }
     }
 }

@@ -15,7 +15,8 @@ namespace ArcCorpBackend.Services
         private static readonly string JwtKey = ConstantSecretKeyService.Instance.GetJWT();
         private static readonly string Issuer = "ArcCorp";
         private static readonly string Audience = "ArcCorpClients";
-        private static readonly int ExpiresMinutes = 120;
+        private static readonly int ExpiresMinutes = 60 * 24 * 7; // 7 days
+
 
         /// <summary>
         /// Generates a signed JWT token for the given user ID.

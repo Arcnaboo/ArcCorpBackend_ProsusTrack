@@ -10,8 +10,7 @@ namespace ArcCorpBackend.Controllers
     [Route("api/[controller]")]
     public class UsersController : ControllerBase
     {
-
-        private static readonly string ARCCORP_EMAIL_VERIFICATION_TEMPLATE = 
+        private static readonly string ARCCORP_EMAIL_VERIFICATION_TEMPLATE =
                                 @"<!DOCTYPE html>
                                 <html xmlns='http://www.w3.org/1999/xhtml'>
                                 <head>
@@ -47,15 +46,6 @@ namespace ArcCorpBackend.Controllers
                                 </body>
                                 </html>";
 
-
-
-
-        /// <summary>
-        /// Login endpoint using query string params.
-        /// Call with only 'email' to request code, or both 'email' and 'code' to validate.
-        /// Example: /api/users/login?email=user@example.com
-        ///          /api/users/login?email=user@example.com&code=1234
-        /// </summary>
         [HttpGet]
         [Route("login")]
         [AllowAnonymous]
@@ -74,7 +64,6 @@ namespace ArcCorpBackend.Controllers
             {
                 string generatedCode;
 
-                // 1️⃣ Existing user: generate/send new code
                 if (UserService.IsExistingUser(email, out generatedCode))
                 {
                     var emailHtml = string.Format(ARCCORP_EMAIL_VERIFICATION_TEMPLATE, email, generatedCode, DateTime.UtcNow.Year);
@@ -85,7 +74,6 @@ namespace ArcCorpBackend.Controllers
                     return Ok(result);
                 }
 
-                // 2️⃣ Otherwise: use pending or new code
                 var existingCode = UserService.GetExistingCode(email);
                 if (!string.IsNullOrEmpty(existingCode))
                 {
@@ -105,7 +93,6 @@ namespace ArcCorpBackend.Controllers
             }
             else
             {
-                // 3️⃣ Code present: validate it
                 if (await UserService.ValidateCode(email, code))
                 {
                     var jwt = AuthService.GenerateToken(email);
@@ -131,6 +118,129 @@ namespace ArcCorpBackend.Controllers
             return Ok("foobar");
         }
 
+        [HttpGet("get_user_model")]
+        [Authorize]
+        public async Task<ActionResult<UserModel>> GetUserModel()
+        {
+            var token = Request.Headers["Authorization"].ToString().Split(" ")[1];
+            if (!AuthService.ValidateToken(token, out string userId))
+            {
+                return Unauthorized("Invalid or expired token");
+            }
+
+            try
+            {
+                var userModel = await UserService.GetUserModelById(userId);
+                if (userModel == null)
+                {
+                    return Ok("User not found");
+                }
+                return Ok(userModel);
+            }
+            catch (Exception ex)
+            {
+                return Ok($"Error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("get_chats")]
+        [Authorize]
+        public async Task<ActionResult<List<ChatModel>>> GetChats()
+        {
+            var token = Request.Headers["Authorization"].ToString().Split(" ")[1];
+            if (!AuthService.ValidateToken(token, out string userId))
+            {
+                return Unauthorized("Invalid or expired token");
+            }
+
+            try
+            {
+                var chats = await UserService.GetChatsForUser(userId);
+                return Ok(chats);
+            }
+            catch (Exception ex)
+            {
+                return Ok($"Error: {ex.Message}");
+            }
+        }
+
+        [HttpGet("get_messages")]
+        [Authorize]
+        public async Task<ActionResult<List<MessageModel>>> GetMessages(string chatId)
+        {
+            var token = Request.Headers["Authorization"].ToString().Split(" ")[1];
+            if (!AuthService.ValidateToken(token, out string _))
+            {
+                return Unauthorized("Invalid or expired token");
+            }
+
+            try
+            {
+                var messages = await UserService.GetMessagesForChat(chatId);
+                if (messages == null)
+                {
+                    return Ok("Chat not found");
+                }
+                return Ok(messages);
+            }
+            catch (Exception ex)
+            {
+                return Ok($"Error: {ex.Message}");
+            }
+        }
+
+        [HttpPost("new_chat")]
+        [Authorize]
+        public async Task<ActionResult<ChatResultModel>> NewChat()
+        {
+            var token = Request.Headers["Authorization"].ToString().Split(" ")[1];
+            if (!AuthService.ValidateToken(token, out string userId))
+            {
+                return Unauthorized("Invalid or expired token");
+            }
+
+            try
+            {
+                var chatModel = await UserService.New_Chat(userId);
+                var chatresult = new ChatResultModel {
+                    ChatModel = chatModel,
+                    Success = true,
+                    Message = "chat initiated"
+                };
+                    ;
+                return Ok(chatresult);
+            }
+            catch (Exception ex)
+            {
+                return Ok($"Error: {ex.Message}");
+            }
+        }
+
+        [HttpPost("prompt")]
+        [Authorize]
+        public async Task<ActionResult<UniversalIntentResponseModel>> Prompt([FromBody] UserPromptParamModel promptParam)
+        {
+            var token = Request.Headers["Authorization"].ToString().Split(" ")[1];
+            if (!AuthService.ValidateToken(token, out string _))
+            {
+                return Unauthorized("Invalid or expired token");
+            }
+
+            if (promptParam == null || string.IsNullOrWhiteSpace(promptParam.ChatId) || string.IsNullOrWhiteSpace(promptParam.UserMessage))
+            {
+                return Ok("Error: chatId and userMessage must be provided in the request body.");
+            }
+
+            try
+            {
+                var response = await ChatService.Query(promptParam.ChatId, promptParam.UserMessage);
+                return Ok(response);
+            }
+            catch (Exception ex)
+            {
+                return Ok($"Error: {ex.Message}");
+            }
+        }
 
     }
 }
