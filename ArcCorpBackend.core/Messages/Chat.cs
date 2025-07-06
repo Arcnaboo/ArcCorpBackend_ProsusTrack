@@ -13,13 +13,11 @@ namespace ArcCorpBackend.Core.Messages
         [Key(1)]
         public DateTime CreatedAt { get; private set; }
 
-        [Key(2)]
+        [IgnoreMember] // Prevent recursive serialization back to User
         public User User { get; private set; }
 
         [Key(3)]
         public List<Message> Messages { get; private set; }
-
-
 
         public Chat(User user)
         {
@@ -30,7 +28,7 @@ namespace ArcCorpBackend.Core.Messages
         }
 
         // Parameterless constructor required for MessagePack deserialization
-        private Chat() 
+        private Chat()
         {
             if (Messages == null)
             {

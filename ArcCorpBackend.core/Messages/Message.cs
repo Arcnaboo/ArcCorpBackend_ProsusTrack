@@ -9,7 +9,7 @@ namespace ArcCorpBackend.Core.Messages
         [Key(0)]
         public Guid MessageId { get; private set; }
 
-        [Key(1)]
+        [IgnoreMember] // Prevent recursive serialization back to Chat
         public Chat Chat { get; private set; }
 
         [Key(2)]
