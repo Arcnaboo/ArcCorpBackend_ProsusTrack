@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using ArcCorpBackend.Services;
 using ArcCorpBackend.Models;
 using Microsoft.AspNetCore.Authorization;
+using Serilog;
+using ArcCorpBackend.Domain.Repositories;
 
 namespace ArcCorpBackend.Controllers
 {
@@ -51,10 +53,13 @@ namespace ArcCorpBackend.Controllers
         [AllowAnonymous]
         public async Task<ActionResult<LoginResultModel>> Login(string email, string code = null)
         {
+            Log.Information("Login - initiated");
+
             var result = new LoginResultModel();
 
             if (string.IsNullOrEmpty(email))
             {
+                Log.Information("Login - missing email");
                 result.Success = false;
                 result.Message = "Error: Email parameter is required to proceed with login.";
                 return BadRequest(result);
@@ -71,6 +76,7 @@ namespace ArcCorpBackend.Controllers
 
                     result.Success = true;
                     result.Message = $"A new verification code has been sent to existing user {email}. Please check your inbox and spam folder.";
+                    Log.Information("Login - verification code sent to existing user");
                     return Ok(result);
                 }
 
@@ -89,6 +95,7 @@ namespace ArcCorpBackend.Controllers
 
                 result.Success = true;
                 result.Message = $"Verification code sent to {email}. If you don’t see the email, please check your spam or junk folder.";
+                Log.Information("Login - verification code sent to new or pending user");
                 return Ok(result);
             }
             else
@@ -100,12 +107,14 @@ namespace ArcCorpBackend.Controllers
                     result.Success = true;
                     result.Message = "Login successful. Welcome!";
                     result.JwtAuthKey = jwt;
+                    Log.Information("Login - completed successfully");
                     return Ok(result);
                 }
                 else
                 {
                     result.Success = false;
                     result.Message = "Invalid verification code. Please check your email and try again.";
+                    Log.Information("Login - invalid code");
                     return Unauthorized(result);
                 }
             }
@@ -115,6 +124,8 @@ namespace ArcCorpBackend.Controllers
         [AllowAnonymous]
         public ActionResult Test_online()
         {
+            Log.Information("Test_online - initiated");
+            Log.Information("Test_online - completed successfully");
             return Ok("foobar");
         }
 
@@ -122,9 +133,12 @@ namespace ArcCorpBackend.Controllers
         [Authorize]
         public async Task<ActionResult<UserModel>> GetUserModel()
         {
+            Log.Information("GetUserModel - initiated");
+
             var token = Request.Headers["Authorization"].ToString().Split(" ")[1];
             if (!AuthService.ValidateToken(token, out string userId))
             {
+                Log.Information("GetUserModel - unauthorized access");
                 return Unauthorized("Invalid or expired token");
             }
 
@@ -133,12 +147,15 @@ namespace ArcCorpBackend.Controllers
                 var userModel = await UserService.GetUserModelById(userId);
                 if (userModel == null)
                 {
+                    Log.Information("GetUserModel - user not found");
                     return Ok("User not found");
                 }
+                Log.Information("GetUserModel - completed successfully");
                 return Ok(userModel);
             }
             catch (Exception ex)
             {
+                Log.Error(ex, "GetUserModel - error occurred");
                 return Ok($"Error: {ex.Message}");
             }
         }
@@ -147,19 +164,24 @@ namespace ArcCorpBackend.Controllers
         [Authorize]
         public async Task<ActionResult<List<ChatModel>>> GetChats()
         {
+            Log.Information("GetChats - initiated");
+
             var token = Request.Headers["Authorization"].ToString().Split(" ")[1];
             if (!AuthService.ValidateToken(token, out string userId))
             {
+                Log.Information("GetChats - unauthorized access");
                 return Unauthorized("Invalid or expired token");
             }
 
             try
             {
                 var chats = await UserService.GetChatsForUser(userId);
+                Log.Information("GetChats - completed successfully");
                 return Ok(chats);
             }
             catch (Exception ex)
             {
+                Log.Error(ex, "GetChats - error occurred");
                 return Ok($"Error: {ex.Message}");
             }
         }
@@ -168,9 +190,12 @@ namespace ArcCorpBackend.Controllers
         [Authorize]
         public async Task<ActionResult<List<MessageModel>>> GetMessages(string chatId)
         {
+            Log.Information("GetMessages - initiated");
+
             var token = Request.Headers["Authorization"].ToString().Split(" ")[1];
             if (!AuthService.ValidateToken(token, out string _))
             {
+                Log.Information("GetMessages - unauthorized access");
                 return Unauthorized("Invalid or expired token");
             }
 
@@ -179,12 +204,15 @@ namespace ArcCorpBackend.Controllers
                 var messages = await UserService.GetMessagesForChat(chatId);
                 if (messages == null)
                 {
+                    Log.Information("GetMessages - chat not found");
                     return Ok("Chat not found");
                 }
+                Log.Information("GetMessages - completed successfully");
                 return Ok(messages);
             }
             catch (Exception ex)
             {
+                Log.Error(ex, "GetMessages - error occurred");
                 return Ok($"Error: {ex.Message}");
             }
         }
@@ -193,54 +221,74 @@ namespace ArcCorpBackend.Controllers
         [Authorize]
         public async Task<ActionResult<ChatResultModel>> NewChat()
         {
+            Log.Information("NewChat - initiated");
+
             var token = Request.Headers["Authorization"].ToString().Split(" ")[1];
             if (!AuthService.ValidateToken(token, out string userId))
             {
+                Log.Information("NewChat - unauthorized access");
                 return Unauthorized("Invalid or expired token");
             }
 
             try
             {
                 var chatModel = await UserService.New_Chat(userId);
-                var chatresult = new ChatResultModel {
+                var chatresult = new ChatResultModel
+                {
                     ChatModel = chatModel,
                     Success = true,
                     Message = "chat initiated"
                 };
-                    ;
+                Log.Information("NewChat - completed successfully");
                 return Ok(chatresult);
             }
             catch (Exception ex)
             {
+                Log.Error(ex, "NewChat - error occurred");
                 return Ok($"Error: {ex.Message}");
             }
         }
 
         [HttpPost("prompt")]
         [Authorize]
-        public async Task<ActionResult<UniversalIntentResponseModel>> Prompt([FromBody] UserPromptParamModel promptParam)
+        public async Task<ActionResult<UniversalIntentResponseModel>> Prompt(UserPromptParamModel promptParam)
         {
+            Log.Information("Prompt - initiated");
+
             var token = Request.Headers["Authorization"].ToString().Split(" ")[1];
-            if (!AuthService.ValidateToken(token, out string _))
+            if (!AuthService.ValidateToken(token, out string userId))
             {
+                Log.Information("Prompt - unauthorized access");
                 return Unauthorized("Invalid or expired token");
             }
 
             if (promptParam == null || string.IsNullOrWhiteSpace(promptParam.ChatId) || string.IsNullOrWhiteSpace(promptParam.UserMessage))
             {
+                Log.Information("Prompt - missing chatId or userMessage");
                 return Ok("Error: chatId and userMessage must be provided in the request body.");
             }
 
             try
             {
+                // First: query the chat session for intent response
                 var response = await ChatService.Query(promptParam.ChatId, promptParam.UserMessage);
+
+                // Second: evaluate prompt for user data preferences
+                var repo = new UsersRepository();
+                var user = await repo.GetUserByIdAsync(Guid.Parse(userId));
+                var userDataService = SynapTronUserDataService.Create(repo);
+                var userDataResult = await userDataService.EvaluatePromptAsync(promptParam.UserMessage, user);
+
+                Log.Information("@Prompt - SynapTronUserDataService returned: {UserDataResult}", userDataResult);
+
+                Log.Information("Prompt - completed successfully");
                 return Ok(response);
             }
             catch (Exception ex)
             {
+                Log.Error(ex, "Prompt - error occurred");
                 return Ok($"Error: {ex.Message}");
             }
         }
-
     }
 }

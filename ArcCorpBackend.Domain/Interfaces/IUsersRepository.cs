@@ -9,7 +9,7 @@ namespace ArcCorpBackend.Domain.Interfaces
     {
         // User methods
         Task<List<User>> GetUsersAsync();
-        Task<bool> UsersExists(string emsil);
+        Task<bool> UsersExists(string email);
         Task<User?> GetUserByEmailAsync(string email);
         Task<User?> GetUserByIdAsync(Guid userId);
         Task AddUserAsync(User user);
@@ -20,8 +20,13 @@ namespace ArcCorpBackend.Domain.Interfaces
         Task DeleteUserDataAsync(Guid userDataId);
         Task<UserData?> GetUserDataByIdAsync(Guid userDataId);
         Task<List<UserData>> GetUserDataForUserAsync(Guid userId);
+        List<UserData> GetUserDataForUser(Guid userId);
         Task DeleteAllUserDataForUserAsync(Guid userId);
         Task<List<UserData>> GetAllUserDataAsync();
+
+        // Knowledge methods
+        Task<Knowledge?> GetKnowledgeByUserIdAsync(Guid userId);
+        Task AddKnowledgeAsync(Knowledge knowledge);
 
         // Persistence
         Task SaveChangesAsync();

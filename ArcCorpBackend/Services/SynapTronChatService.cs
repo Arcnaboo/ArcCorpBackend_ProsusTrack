@@ -6,6 +6,8 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using ArcCorpBackend.Core.Users;
 using ArcCorpBackend.Core.Messages;
+using ArcCorpBackend.Domain.Interfaces;
+using ArcCorpBackend.Domain.Repositories;
 
 namespace ArcCorpBackend.Services
 {
@@ -18,12 +20,13 @@ namespace ArcCorpBackend.Services
         private readonly string _groqApiKey;
         private readonly List<Dictionary<string, string>> _globalHistory;
         private readonly string _systemFacts;
-
+        private readonly IUsersRepository _usersRepository = new UsersRepository();
+        private readonly User _user;
         public SynapTronChatService(User user, string chatId)
         {
             if (!Guid.TryParse(chatId, out Guid parsedChatId))
                 throw new ArgumentException("Invalid chatId format");
-
+            _user = user;
             var enigma = new Enigma3Service();
             _groqApiKey = enigma.Decrypt(ApiKeyGuid, EncryptedApiKey);
 
@@ -53,6 +56,20 @@ namespace ArcCorpBackend.Services
                 "  \"toId\": \"IATA code of the arrival airport, e.g., ESB\",\n" +
                 "  \"departureDate\": \"yyyy-MM-dd\"\n" +
                 "}\n";
+            // here we should consider adding user history
+            List<UserData> datas = _usersRepository.GetUserDataForUser(user.UserId);
+
+            //here add userdata to globalhistory possibly as additional sys fact
+            //List<UserData> datas = _usersRepository.GetUserDataForUser(user.UserId);
+
+            foreach (var data in datas)
+            {
+                _globalHistory.Add(new Dictionary<string, string>
+                {
+                    ["role"] = "system",
+                    ["content"] = $"User preference: {data.Message}"
+                });
+            }
 
             _globalHistory.Add(new Dictionary<string, string>
             {

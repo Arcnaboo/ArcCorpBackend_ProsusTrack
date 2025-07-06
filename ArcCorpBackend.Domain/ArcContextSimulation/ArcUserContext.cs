@@ -11,14 +11,17 @@ namespace ArcCorpBackend.Domain.ArcContextSimulation
     {
         private const string UsersFileName = "ArcUserContext.dat";
         private const string UserDataFileName = "ArcUserDataContext.dat";
+        private const string KnowledgeFileName = "ArcKnowledgeContext.dat";
 
         public HashSet<User> Users { get; private set; }
         public HashSet<UserData> UserDataSet { get; private set; }
+        public HashSet<Knowledge> KnowledgeSet { get; private set; }
 
         public ArcUserContext()
         {
             Users = new HashSet<User>();
             UserDataSet = new HashSet<UserData>();
+            KnowledgeSet = new HashSet<Knowledge>();
 
             Task.Run(async () =>
             {
@@ -53,6 +56,22 @@ namespace ArcCorpBackend.Domain.ArcContextSimulation
                         UserDataSet = new HashSet<UserData>();
                     }
                 }
+
+                // Load KnowledgeSet
+                if (File.Exists(KnowledgeFileName))
+                {
+                    try
+                    {
+                        byte[] knowledgeBytes = await File.ReadAllBytesAsync(KnowledgeFileName);
+                        var loadedKnowledge = MessagePackSerializer.Deserialize<HashSet<Knowledge>>(knowledgeBytes);
+                        KnowledgeSet = loadedKnowledge ?? new HashSet<Knowledge>();
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"Error loading {KnowledgeFileName}: {ex.Message}");
+                        KnowledgeSet = new HashSet<Knowledge>();
+                    }
+                }
             }).GetAwaiter().GetResult();
         }
 
@@ -78,6 +97,17 @@ namespace ArcCorpBackend.Domain.ArcContextSimulation
             UserDataSet.RemoveWhere(ud => ud.Id == userDataId);
         }
 
+        public void AddKnowledge(Knowledge knowledge)
+        {
+            if (!KnowledgeSet.Add(knowledge))
+                throw new InvalidOperationException("This Knowledge already exists in the context.");
+        }
+
+        public void RemoveKnowledge(Guid userId)
+        {
+            KnowledgeSet.RemoveWhere(k => k.User.UserId == userId);
+        }
+
         public async Task SaveChangesAsync()
         {
             try
@@ -87,10 +117,13 @@ namespace ArcCorpBackend.Domain.ArcContextSimulation
 
                 byte[] userDataBytes = MessagePackSerializer.Serialize(UserDataSet);
                 await File.WriteAllBytesAsync(UserDataFileName, userDataBytes);
+
+                byte[] knowledgeBytes = MessagePackSerializer.Serialize(KnowledgeSet);
+                await File.WriteAllBytesAsync(KnowledgeFileName, knowledgeBytes);
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error saving users or user data: {ex.Message}");
+                Console.WriteLine($"Error saving users, user data, or knowledge: {ex.Message}");
             }
         }
     }

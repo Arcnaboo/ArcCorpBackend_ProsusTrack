@@ -90,5 +90,30 @@ namespace ArcCorpBackend.Domain.Repositories
            // return _userContext.Users.Where(x => x.Email == emsil).Any();
             
         }
+
+        List<UserData> IUsersRepository.GetUserDataForUser(Guid userId)
+        {
+            var datas = _userContext.UserDataSet.Where(x => x.Id == userId).ToList();
+            return datas;
+        }
+
+        Task<Knowledge?> IUsersRepository.GetKnowledgeByUserIdAsync(Guid userId)
+        {
+            return Task.Run(() =>
+                _userContext.KnowledgeSet.FirstOrDefault(k => k.User.UserId == userId)
+            );
+        }
+
+        Task IUsersRepository.AddKnowledgeAsync(Knowledge knowledge)
+        {
+            return Task.Run(() =>
+            {
+                // Ensure uniqueness: remove existing knowledge for this user
+                _userContext.KnowledgeSet.RemoveWhere(k => k.User.UserId == knowledge.User.UserId);
+
+                // Add the new knowledge instance
+                _userContext.AddKnowledge(knowledge);
+            });
+        }
     }
 }
