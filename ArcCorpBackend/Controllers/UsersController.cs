@@ -56,12 +56,14 @@ namespace ArcCorpBackend.Controllers
             Log.Information("Login - initiated");
 
             var result = new LoginResultModel();
+            result.Email = email;
 
             if (string.IsNullOrEmpty(email))
             {
                 Log.Information("Login - missing email");
                 result.Success = false;
                 result.Message = "Error: Email parameter is required to proceed with login.";
+                result.Email = email;
                 return BadRequest(result);
             }
 

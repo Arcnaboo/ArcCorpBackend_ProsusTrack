@@ -6,5 +6,8 @@ namespace ArcCorpBackend.Models
     {
         [JsonPropertyName("jwtAuthKey")]
         public string JwtAuthKey { get; set; }
+
+        [JsonPropertyName("email")]
+        public string Email { get; set; }
     }
 }

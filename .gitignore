@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/ArcCorpBackend/ArcUserContext.dat
+/ArcCorpBackend/ArcUserDataContext.dat
+/ArcCorpBackend/ArcKnowledgeContext.dat
