@@ -122,9 +122,12 @@ namespace ArcCorpBackend.Services
             var chatModels = new List<ChatModel>();
             if (user.Chats != null)
             {
+                var x = 1;
                 foreach (var chat in user.Chats)
                 {
-                    chatModels.Add(new ChatModel(chat));
+                    var name = "Chat " + x.ToString();
+                    chatModels.Add(new ChatModel(chat, name));
+                    x++;
                 }
             }
             return chatModels;

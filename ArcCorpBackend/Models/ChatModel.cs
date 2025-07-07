@@ -8,8 +8,11 @@ namespace ArcCorpBackend.Models
     public class ChatModel
 
     {
-        [JsonPropertyName("id")]
+        [JsonPropertyName("chatId")]
         public string Id { get; set; }
+        
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
 
         [JsonPropertyName("createdAt")]
         public DateTime CreatedAt { get; set; }
@@ -17,11 +20,13 @@ namespace ArcCorpBackend.Models
         [JsonPropertyName("messages")]
         public List<MessageModel> Messages { get; set; }
 
-        public ChatModel(Chat chat)
+        public ChatModel(Chat chat, string name)
         {
+            Name = name;
             Id = chat.ChatId.ToString();
             CreatedAt = chat.CreatedAt;
             Messages = new List<MessageModel>();
+
             if (chat.Messages != null)
             {
                 foreach (var message in chat.Messages)
