@@ -126,20 +126,22 @@ namespace ArcCorpBackend.Services
                 };
 
                 if (arc.ReadyForAction && arc.Category.Equals("Flight Booking", StringComparison.OrdinalIgnoreCase))
-                {
+                {/* Depreciated
                     var flightParams = new SearchFlightParams
                     {
-                        Source = arc.Source ?? "City:LON",
-                        Destination = arc.Destination ?? "City:DXB",
-                        OutboundDepartmentDateStart = arc.DepartureDate ?? "2025-08-10T00:00:00",
-                        OutboundDepartmentDateEnd = arc.DepartureDate ?? "2025-08-10T00:00:00",
-                    };
-
+                        Source = arc.Source ?? "IST",  // ✅ Fixed: Use FromId not Source
+                        Destination = arc.Destination ?? "ESB",  // ✅ Fixed: Use ToId not Destination
+                        OutboundDepartmentDateStart = arc.DepartureDate ?? DateTime.Now.AddMonths(1).ToString("yyyy-MM-dd"),  // ✅ Fixed: Proper date format
+                        OutboundDepartmentDateEnd = arc.DepartureDate ?? DateTime.Now.AddMonths(1).ToString("yyyy-MM-dd"),
+                    };*/
+                    /* De[reciated
                     var rawFlightJson = await BookingComAPIService.Instance.SearchFlightAsyncKiwi(flightParams);
 
                     var handler = new BookingComResultHandlerService();
-                    var cards = handler.Handle(rawFlightJson);
-
+                    var cards = handler.Handle(rawFlightJson);*/
+                    var rJson = await AlmostRealApiService.Instance.SearchFlightsAsync(arc.Source, arc.Destination, arc.DepartureDate);
+                    var handler = new AlmostRealResultHandlerService();
+                    var cards = handler.Handle(rJson);
                     if (cards.Count == 0)
                     {
                         return new SynapTronResponse

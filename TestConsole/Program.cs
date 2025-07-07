@@ -120,7 +120,6 @@ namespace TestConsole
                         Console.WriteLine($"    Details: {card.Details}");
                         Console.WriteLine($"    Price: {card.Price}");
                         Console.WriteLine($"    Location: {card.Location}");
-                        //Console.WriteLine($"    Action: {card.Action.Type} → {card.Action.Url}");
                         if (i == 6) break;
                     }
                 }
@@ -128,6 +127,96 @@ namespace TestConsole
                 {
                     Console.WriteLine($"No cards returned.");
                 }
+                Console.WriteLine();
+            }
+        }
+
+        static async Task TestFlightService()
+        {
+            Console.WriteLine("SynapTron Flight Service Test mode selected!");
+            Console.WriteLine("Test flight search generation. Type 'exit' to quit.\n");
+
+            var flightService = SynapTronFlightService.Instance;
+            var resultHandler = new AlmostRealResultHandlerService();
+
+            while (true)
+            {
+                Console.WriteLine("Available commands:");
+                Console.WriteLine("1. SEARCH [origin] [destination] [YYYY-MM-DD] - Generate realistic flights");
+                Console.WriteLine("2. exit - Exit flight service test");
+                Console.WriteLine();
+
+                Console.Write("Flight> ");
+                var input = Console.ReadLine();
+                if (string.IsNullOrWhiteSpace(input))
+                    continue;
+                if (input.Trim().ToLower() == "exit")
+                    break;
+
+                var parts = input.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length == 0)
+                    continue;
+
+                var command = parts[0].ToUpper();
+
+                try
+                {
+                    switch (command)
+                    {
+                        case "SEARCH":
+                            if (parts.Length < 4)
+                            {
+                                Console.WriteLine("[ERROR] Usage: SEARCH [origin] [destination] [YYYY-MM-DD]");
+                                Console.WriteLine("[EXAMPLE] SEARCH MUC LHR 2025-08-15");
+                                break;
+                            }
+
+                            var origin = parts[1];
+                            var destination = parts[2];
+                            var dateStr = parts[3];
+
+                            if (!DateTime.TryParse(dateStr, out var departureDate))
+                            {
+                                Console.WriteLine("[ERROR] Invalid date format. Use YYYY-MM-DD");
+                                break;
+                            }
+
+                            Console.WriteLine($"[GENERATING] {origin} → {destination} on {departureDate:yyyy-MM-dd}...");
+                            var jsonResult = await flightService.GenerateFlightResultsAsync(origin, destination, departureDate.ToString("yyyy-MM-dd"));
+
+                            Console.WriteLine($"[RAW JSON RESULT]\n{jsonResult}");
+
+                            var cards = resultHandler.Handle(jsonResult);
+
+                            if (cards.Count == 0)
+                            {
+                                Console.WriteLine("[NO FLIGHTS FOUND]");
+                            }
+                            else
+                            {
+                                Console.WriteLine("\n[PARSED FLIGHTS]");
+                                foreach (var card in cards)
+                                {
+                                    Console.WriteLine($"- Title: {card.Title}");
+                                    Console.WriteLine($"  Location: {card.Location}");
+                                    Console.WriteLine($"  Details: {card.Details}");
+                                    Console.WriteLine($"  Price: {card.Price}");
+                                    Console.WriteLine($"  Action: {card.Action.Type} → {card.Action.Url}");
+                                    Console.WriteLine();
+                                }
+                            }
+                            break;
+
+                        default:
+                            Console.WriteLine("[ERROR] Unknown command. Use SEARCH or exit.");
+                            break;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[ERROR] {ex.Message}");
+                }
+
                 Console.WriteLine();
             }
         }
@@ -142,8 +231,15 @@ namespace TestConsole
             var id = new Guid("2b150884-be96-4854-85b8-d7e63101ca46");
             Console.WriteLine($"Random GUID for this session: {id}");
 
-            Console.WriteLine("Choose mode: Type '1' for Enigma3 test, '2' for flight search tester, '3' for SynapTron main app tester, '4' for JWT test, or '5' for Chat tester:");
+            Console.WriteLine("Choose mode:");
+            Console.WriteLine("1 - Enigma3 test");
+            Console.WriteLine("2 - Flight search tester");
+            Console.WriteLine("3 - SynapTron main app tester");
+            Console.WriteLine("4 - JWT test");
+            Console.WriteLine("5 - Chat tester");
+            Console.WriteLine("6 - Flight service test");
             Console.Write("> ");
+
             var modeInput = Console.ReadLine()?.Trim();
             if (modeInput == "2")
             {
@@ -160,6 +256,10 @@ namespace TestConsole
             else if (modeInput == "5")
             {
                 await TestChat();
+            }
+            else if (modeInput == "6")
+            {
+                await TestFlightService();
             }
             else
             {
