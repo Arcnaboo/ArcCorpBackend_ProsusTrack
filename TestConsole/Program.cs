@@ -86,7 +86,7 @@ namespace TestConsole
             var user = new User(email);
             Console.WriteLine($"Created user with ID: {user.UserId}");
 
-            var chat = new Chat(user);
+            var chat = new Chat(user, "name");
             user.Chats.Add(chat);
             ChatService.InitiateChat(user, chat.ChatId.ToString());
 
