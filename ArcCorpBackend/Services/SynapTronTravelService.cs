@@ -191,15 +191,16 @@ namespace ArcCorpBackend.Services
         [JsonPropertyName("userPrompt")]
         public string? UserPrompt { get; set; }
 
-        [JsonPropertyName("source")]
+        [JsonPropertyName("fromId")]
         public string? Source { get; set; }
 
-        [JsonPropertyName("destination")]
+        [JsonPropertyName("toId")]
         public string? Destination { get; set; }
 
         [JsonPropertyName("departureDate")]
         public string? DepartureDate { get; set; }
     }
+
 
 
     public class SynapTronResponse
