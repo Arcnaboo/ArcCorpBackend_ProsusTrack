@@ -13,18 +13,22 @@ namespace ArcCorpBackend.Core.Messages
         [Key(1)]
         public DateTime CreatedAt { get; private set; }
 
+        [Key(2)]
+        public string Name { get; private set; }
+
         [IgnoreMember] // Prevent recursive serialization back to User
         public User User { get; private set; }
 
         [Key(3)]
         public List<Message> Messages { get; private set; }
 
-        public Chat(User user)
+        public Chat(User user, string name)
         {
             User = user ?? throw new ArgumentNullException(nameof(user), "User cannot be null.");
             ChatId = Guid.NewGuid();
             CreatedAt = DateTime.UtcNow;
             Messages = new List<Message>();
+            Name = name;
         }
 
         // Parameterless constructor required for MessagePack deserialization

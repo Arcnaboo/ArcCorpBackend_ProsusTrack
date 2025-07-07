@@ -177,12 +177,14 @@ namespace ArcCorpBackend.Services
             {
                 throw new KeyNotFoundException($"User with ID {userId} not found.");
             }
-
-            var newChat = new Chat(user);
+            var name = "Chat " +(user.Chats.Count + 1).ToString();
+            var newChat = new Chat(user, name);
             user.Chats.Add(newChat);
 
             await UsersRepository.SaveChangesAsync();
             ChatService.InitiateChat(user, newChat.ChatId.ToString());
+            
+
             return new ChatModel(newChat);
         }
 

@@ -20,9 +20,9 @@ namespace ArcCorpBackend.Models
         [JsonPropertyName("messages")]
         public List<MessageModel> Messages { get; set; }
 
-        public ChatModel(Chat chat, string name)
+        public ChatModel(Chat chat)
         {
-            Name = name;
+            Name = chat.Name;
             Id = chat.ChatId.ToString();
             CreatedAt = chat.CreatedAt;
             Messages = new List<MessageModel>();
