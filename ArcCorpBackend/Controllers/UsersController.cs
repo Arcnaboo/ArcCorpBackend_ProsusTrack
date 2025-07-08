@@ -5,6 +5,7 @@ using ArcCorpBackend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Serilog;
 using ArcCorpBackend.Domain.Repositories;
+using ArcCorpBackend.Domain.Interfaces;
 
 namespace ArcCorpBackend.Controllers
 {
@@ -276,12 +277,14 @@ namespace ArcCorpBackend.Controllers
 
             try
             {
+                IUsersRepository repo = new UsersRepository();
                 // First: query the chat session for intent response
-                var response = await ChatService.Query(promptParam.ChatId, promptParam.UserMessage);
+                var user = await repo.GetUserByIdAsync(Guid.Parse(userId));
+                var response = await ChatService.Query(user,promptParam.ChatId, promptParam.UserMessage);
 
                 // Second: evaluate prompt for user data preferences
-                var repo = new UsersRepository();
-                var user = await repo.GetUserByIdAsync(Guid.Parse(userId));
+                
+                //var user = await repo.GetUserByIdAsync(Guid.Parse(userId));
                 var userDataService = SynapTronUserDataService.Create(repo);
                 var userDataResult = await userDataService.EvaluatePromptAsync(promptParam.UserMessage, user);
 
