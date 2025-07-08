@@ -113,13 +113,17 @@ namespace ArcCorpBackend.Services
                 throw new ArgumentException("Invalid userId format");
             }
 
-            var user = await UsersRepository.GetUserByIdAsync(parsedUserId);
-            if (user == null)
+            
+
+
+            var chats = await UsersRepository.GetChatsForUserAsync(parsedUserId);
+            var chatModels = new List<ChatModel>();
+            foreach (var chat in chats)
             {
-                return null;
+                chatModels.Add(new ChatModel(chat));    
             }
 
-            var chatModels = new List<ChatModel>();
+
 
             
          
