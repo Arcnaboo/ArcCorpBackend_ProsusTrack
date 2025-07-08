@@ -1,29 +1,36 @@
 ﻿using System;
-using MessagePack;
+using System.ComponentModel.DataAnnotations;
+
 
 namespace ArcCorpBackend.Core.Messages
 {
-    [MessagePackObject]
-    public partial class Message
+    
+    public  class Message
     {
-        [Key(0)]
+        [Key]
         public Guid MessageId { get; private set; }
 
-        [IgnoreMember] // Prevent recursive serialization back to Chat
-        public Chat Chat { get; private set; }
-
-        [Key(2)]
         public DateTime CreatedAt { get; private set; }
 
-        [Key(3)]
+        
         public bool IsUserMessage { get; private set; }
 
-        [Key(4)]
+        public Guid ChatId { get; private set; }
+        
         public string Content { get; private set; }
 
-        public Message(Chat chat, bool isUserMessage, string content)
+        public Message(Guid messageId, Guid ChatId, DateTime createdAt, bool isUserMessage, string content)
         {
-            Chat = chat ?? throw new ArgumentNullException(nameof(chat), "Chat cannot be null.");
+            MessageId = messageId;
+            CreatedAt = createdAt;
+            IsUserMessage = isUserMessage;
+            Content = content;
+        }
+
+        public Message(Guid chatId, bool isUserMessage, string content)
+        {
+            
+            ChatId = chatId;
             if (string.IsNullOrWhiteSpace(content))
                 throw new ArgumentException("Content cannot be null or empty.", nameof(content));
 

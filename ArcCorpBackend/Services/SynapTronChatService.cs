@@ -78,9 +78,10 @@ namespace ArcCorpBackend.Services
                 ["content"] = _systemFacts
             });
 
-            var storedChat = User.Chats.Where(ch => ch.ChatId.ToString() == ChatId.ToString()).First();
+            var messages = repo.GetMessagesForChatAsync(Guid.Parse(ChatId));
+            var msgs = messages.GetAwaiter().GetResult();
 
-            foreach (var message in storedChat.Messages)
+            foreach (var message in msgs)
             {
                 if (message.IsUserMessage)
                 {

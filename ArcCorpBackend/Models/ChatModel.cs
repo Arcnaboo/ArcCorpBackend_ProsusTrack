@@ -27,13 +27,8 @@ namespace ArcCorpBackend.Models
             CreatedAt = chat.CreatedAt;
             Messages = new List<MessageModel>();
 
-            if (chat.Messages != null)
-            {
-                foreach (var message in chat.Messages)
-                {
-                    Messages.Add(new MessageModel(message));
-                }
-            }
+
+
         }
     }
 

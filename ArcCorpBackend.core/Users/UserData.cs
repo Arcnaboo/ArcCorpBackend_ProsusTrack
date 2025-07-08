@@ -1,27 +1,29 @@
 ﻿using System;
-using MessagePack;
+using System.ComponentModel.DataAnnotations;
+
 
 namespace ArcCorpBackend.Core.Users
 {
-    [MessagePackObject]
-    public partial class UserData
+    
+    public  class UserData
     {
-        [Key(0)]
-        public Guid Id { get; private set; }
+        [Key]
+        public Guid UserDataId { get; private set; }
 
-        [Key(1)]
-        public User User { get; private set; }
+ 
+        public Guid UserId { get; private set; }
 
-        [Key(2)]
+        
         public string Message { get; private set; }
+     
 
-        public UserData(User user, string message)
+        public UserData(Guid userid, string message)
         {
-            User = user ?? throw new ArgumentNullException(nameof(user), "User cannot be null.");
+            UserId = userid;
             if (string.IsNullOrWhiteSpace(message))
                 throw new ArgumentException("Message cannot be null or empty.", nameof(message));
 
-            Id = Guid.NewGuid();
+            UserDataId = Guid.NewGuid();
             Message = message;
         }
 

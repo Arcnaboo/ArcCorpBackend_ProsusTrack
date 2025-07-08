@@ -1,43 +1,41 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 using ArcCorpBackend.Core.Users;
-using MessagePack;
+
 
 namespace ArcCorpBackend.Core.Messages
 {
-    [MessagePackObject]
-    public partial class Chat
+    
+    public class Chat
     {
-        [Key(0)]
+        [Key]
         public Guid ChatId { get; private set; }
-
-        [Key(1)]
+        
+        
         public DateTime CreatedAt { get; private set; }
 
-        [Key(2)]
+        
         public string Name { get; private set; }
 
-        [IgnoreMember] // Prevent recursive serialization back to User
-        public User User { get; private set; }
+        
+        public Guid UserId { get; private set; }
 
-        [Key(3)]
-        public List<Message> Messages { get; private set; }
+        
 
-        public Chat(User user, string name)
+
+        public Chat(Guid userId, string name)
         {
-            User = user ?? throw new ArgumentNullException(nameof(user), "User cannot be null.");
+            UserId = userId;
             ChatId = Guid.NewGuid();
             CreatedAt = DateTime.UtcNow;
-            Messages = new List<Message>();
+            
             Name = name;
         }
 
         // Parameterless constructor required for MessagePack deserialization
         private Chat()
         {
-            if (Messages == null)
-            {
-                Messages = new List<Message>();
-            }
+
         }
     }
 }

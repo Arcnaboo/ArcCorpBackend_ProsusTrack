@@ -120,16 +120,9 @@ namespace ArcCorpBackend.Services
             }
 
             var chatModels = new List<ChatModel>();
-            if (user.Chats != null)
-            {
-                var x = 1;
-                foreach (var chat in user.Chats)
-                {
-                    var name = "Chat " + x.ToString();
-                    chatModels.Add(new ChatModel(chat));
-                    x++;
-                }
-            }
+
+            
+         
             return chatModels;
         }
 
@@ -142,21 +135,21 @@ namespace ArcCorpBackend.Services
             {
                 throw new ArgumentException("Invalid chatId format");
             }
+            var messages= await UsersRepository.GetMessagesForChatAsync(parsedChatId);
 
-            var users = await UsersRepository.GetUsersAsync();
-            foreach (var user in users)
+            
+            
+            
+            
+                
+            var messageModels = new List<MessageModel>();
+            foreach (var message in messages)
             {
-                var chat = user.Chats.FirstOrDefault(c => c.ChatId == parsedChatId);
-                if (chat != null)
-                {
-                    var messageModels = new List<MessageModel>();
-                    foreach (var message in chat.Messages)
-                    {
-                        messageModels.Add(new MessageModel(message));
-                    }
-                    return messageModels;
-                }
+                messageModels.Add(new MessageModel(message));
             }
+            return messageModels;
+                
+            
 
             return null; // chat not found
         }
@@ -178,8 +171,8 @@ namespace ArcCorpBackend.Services
                 throw new KeyNotFoundException($"User with ID {userId} not found.");
             }
             var name = "Chat " +(user.Chats.Count + 1).ToString();
-            var newChat = new Chat(user, name);
-            user.Chats.Add(newChat);
+            var newChat = new Chat(user.UserId, name);
+            await UsersRepository.AddChatAsync(newChat);
 
             await UsersRepository.SaveChangesAsync();
             ChatService.InitiateChat(user, newChat.ChatId.ToString());

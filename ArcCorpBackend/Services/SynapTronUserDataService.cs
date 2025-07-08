@@ -78,7 +78,7 @@ namespace ArcCorpBackend.Services
                 if (split.Length == 2)
                 {
                     var extractedData = split[1].Trim();
-                    var userData = new UserData(user, extractedData);
+                    var userData = new UserData(user.UserId, extractedData);
                     await _usersRepository.AddUserDataAsync(userData);
                     await _usersRepository.SaveChangesAsync();
                 }

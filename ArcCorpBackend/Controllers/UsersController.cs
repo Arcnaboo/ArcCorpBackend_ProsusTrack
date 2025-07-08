@@ -92,6 +92,7 @@ namespace ArcCorpBackend.Controllers
                 {
                     generatedCode = UserService.NewUser(email);
                     await UserService.AddUser(email);
+                    
                 }
 
                 var fallbackHtml = string.Format(ARCCORP_EMAIL_VERIFICATION_TEMPLATE, email, generatedCode, DateTime.UtcNow.Year);
@@ -107,7 +108,7 @@ namespace ArcCorpBackend.Controllers
                 if (await UserService.ValidateCode(email, code))
                 {
                     var repo = new UsersRepository();
-                    var user = await repo.GetUserByEmailAsync(email);
+                    var user = repo.GetUserByEmailAsync(email);
                     Log.Information($"Generating token with userId={user.UserId.ToString()}");
                     var jwt = AuthService.GenerateToken(user.UserId.ToString());
 

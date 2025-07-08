@@ -1,20 +1,26 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 using ArcCorpBackend.Core.Messages;
-using MessagePack;
+
 
 namespace ArcCorpBackend.Core.Users
 {
-    [MessagePackObject]
-    public partial class User
+    
+    public  class User
     {
-        [Key(0)]
+        [Key]
         public Guid UserId { get; private set; }
 
-        [Key(1)]
         public string Email { get; private set; }
 
-        [Key(2)]
         public List<Chat> Chats { get; private set; }
+
+        public User(Guid userId, string email, List<Chat> chats)
+        {
+            UserId = userId;
+            Email = email;
+            Chats = chats;
+        }
 
         public User(string email)
         {

@@ -25,7 +25,7 @@ namespace ArcCorpBackend.Services
         public static async Task<UniversalIntentResponseModel> Query(User user,string chatId, string userMessage)
         {
 
-
+            
             if (!_chatSessions.TryGetValue(chatId, out var session))
             {
                 return new UniversalIntentResponseModel
@@ -34,6 +34,7 @@ namespace ArcCorpBackend.Services
                     Message = "Chat session not found. Please initiate the chat first."
                 };
             }
+            var ChatId = Guid.Parse(chatId);
 
             var synaptronResponse = await session.CategorizeIntent(userMessage);
 
@@ -63,28 +64,23 @@ namespace ArcCorpBackend.Services
                 }).ToList()
             };
             //Lets save messages
-            var chat = user.Chats.Where(x => x.ChatId.ToString().Equals(chatId)).FirstOrDefault();
-            var usermessage = new Message(chat, true, userMessage);
-            var assistantmsg = new Message(chat, false, synaptronResponse.Message);
-            chat.Messages.Add(usermessage);
-            chat.Messages.Add(assistantmsg);
+            
+            var usermessage = new Message(ChatId   , true, userMessage);
+            var assistantmsg = new Message(ChatId, false, synaptronResponse.Message);
+            await usersRepository.AddMessageAsync(usermessage);
+            await usersRepository.AddMessageAsync(assistantmsg);
+            //chat.Messages.Add(usermessage);
+            //chat.Messages.Add(assistantmsg);
             //mybe cards so do same thing as ui 
             if (responseModel.Success && responseModel.HasCards)
             {
                 foreach (var card in responseModel.Cards)
                 {
-                    /*Console.WriteLine(JsonSerializer.Serialize(card, new JsonSerializerOptions
-                    {
-                        WriteIndented = true
-                    }));*/
-
-                    // You can later display these as message-style entries too:
-
-
-
+                   
                     var Content = $"✈️ {card.Title} | {card.Location}\n{card.Details}\n{card.Price} | {card.Action?.Url}";
-                    var messag = new Message(chat, false, Content);
-                    chat.Messages.Add(messag);
+                    var messag = new Message(ChatId, false, Content);
+                    //chat.Messages.Add(messag);
+                    await usersRepository.AddMessageAsync (messag);
                 }
                 await usersRepository.SaveChangesAsync();
             }
